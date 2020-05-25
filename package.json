@@ -1,0 +1,28 @@
+{
+  "name": "react-blog-backend",
+  "version": "1.0.0",
+  "description": "This is the backend repository for react blog.  It is based on the react fullstack development course by Shaun Wassell.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rpvyas/react-blog-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rpvyas/react-blog-backend/issues"
+  },
+  "homepage": "https://github.com/rpvyas/react-blog-backend#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.9.6",
+    "@babel/node": "^7.8.7",
+    "@babel/preset-env": "^7.9.6"
+  }
+}
