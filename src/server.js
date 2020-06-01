@@ -1,12 +1,13 @@
 import express from 'express';
 import bodyParser from 'body-parser';
+import { MongoClient } from 'mongodb'; 
 
 // fake in-memory db
-const articlesInfo = {
-    'learn-react': { upvotes: 0, comments:[] },
-    'learn-node': { upvotes: 0, comments:[] },
-    'my-thoughts-on-resumes': { upvotes: 0, comments:[] },
-};
+// const articlesInfo = {
+//     'learn-react': { upvotes: 0, comments:[] },
+//     'learn-node': { upvotes: 0, comments:[] },
+//     'my-thoughts-on-resumes': { upvotes: 0, comments:[] },
+// };
 
 const app = express();
 
@@ -44,6 +45,30 @@ app.post('/api/articles/:name/add-comment', (req, res) => {
     articlesInfo[articleName].comments.push(comment);
     
     res.status(200).send(articlesInfo[articleName]);
+});
+
+app.get('/api/article/:name', async (req,res) => {
+    const articleName = req.params.name;
+    try {
+        const client = await MongoClient.connect(
+            'mongodb://localhost:27017',
+            { useNewUrlParser: true, useUnifiedTopology: true}    
+        );
+    
+        const db = client.db('react-blog-db');
+    
+        const articleInfo = await db.collection('articles').findOne({ name: articleName });
+        client.close();
+        if(!articleInfo) {
+            return res.status(404).send(`Article with the name ${articleName} not found!`);
+        }
+    
+        return res.status(200).json(articleInfo);
+    }
+    catch (e) {
+        res.status(500).send('Something went wrong :(');
+    }
+    
 });
 
 app.listen(8000, () => {
