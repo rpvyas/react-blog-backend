@@ -30,21 +30,80 @@ app.post('/hello', (req, res) => {
 });
 // placeholder end
 
-app.post('/api/articles/:name/upvote', (req,res) => {
+app.post('/api/articles/:name/upvote', async (req,res) => {
     const articleName = req.params.name;
-    articlesInfo[articleName].upvotes += 1;
+    try {
+        const client = await MongoClient.connect(
+            'mongodb://localhost:27017',
+            { useNewUrlParser: true, useUnifiedTopology: true}    
+        );
+    
+        const db = client.db('react-blog-db');
+    
+        const articleInfo = await db.collection('articles').findOne({ name: articleName });
 
-    res.status(200).send(`Success! ${articleName} now has ${articlesInfo[articleName].upvotes} upvotes`);
+        const currentUpvotes = articleInfo.upvotes;
+
+        await db.collection('articles').updateOne({ name: articleName }, {
+            '$set': {
+                upvotes: currentUpvotes+1,
+            }
+        });
+
+        const updatedArticleInfo = await db.collection('articles').findOne({ name: articleName });
+
+        client.close();
+        if(!updatedArticleInfo) {
+            return res.status(404).send(`Article with the name ${articleName} not found!`);
+        }
+    
+        return res.status(200).json(updatedArticleInfo);
+    }
+    catch (e) {
+        res.status(500).send('Something went wrong :(');
+    }
 });
 
-app.post('/api/articles/:name/add-comment', (req, res) => {
-    const articleName = req.params.name;
-    // { xyz } gets the req.body property value without property name
-    const { comment } = req.body;
-
-    articlesInfo[articleName].comments.push(comment);
+app.post('/api/articles/:name/add-comment', async (req, res) => {
+    // const articleName = req.params.name;
+    // // { xyz } gets the req.body property value without property name
     
-    res.status(200).send(articlesInfo[articleName]);
+
+    // articlesInfo[articleName].comments.push(comment);
+    
+    // res.status(200).send(articlesInfo[articleName]);
+    const articleName = req.params.name;
+    const { comment } = req.body;
+    try {
+        const client = await MongoClient.connect(
+            'mongodb://localhost:27017',
+            { useNewUrlParser: true, useUnifiedTopology: true}    
+        );
+    
+        const db = client.db('react-blog-db');
+    
+        const articleInfo = await db.collection('articles').findOne({ name: articleName });
+
+        const currentUpvotes = articleInfo.upvotes;
+
+        await db.collection('articles').updateOne({ name: articleName }, {
+            '$set': {
+                comments: articleInfo.comments.concat(comment),
+            }
+        });
+
+        const updatedArticleInfo = await db.collection('articles').findOne({ name: articleName });
+
+        client.close();
+        if(!updatedArticleInfo) {
+            return res.status(404).send(`Article with the name ${articleName} not found!`);
+        }
+    
+        return res.status(200).json(updatedArticleInfo);
+    }
+    catch (e) {
+        res.status(500).send('Something went wrong :(');
+    }
 });
 
 app.get('/api/article/:name', async (req,res) => {
