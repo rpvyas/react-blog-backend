@@ -1,6 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import { MongoClient } from 'mongodb'; 
+import { withDB } from './withDB';
 
 // fake in-memory db
 // const articlesInfo = {
@@ -32,36 +33,19 @@ app.post('/hello', (req, res) => {
 
 app.post('/api/articles/:name/upvote', async (req,res) => {
     const articleName = req.params.name;
-    try {
-        const client = await MongoClient.connect(
-            'mongodb://localhost:27017',
-            { useNewUrlParser: true, useUnifiedTopology: true}    
-        );
-    
-        const db = client.db('react-blog-db');
-    
+
+    await withDB(async db => {
         const articleInfo = await db.collection('articles').findOne({ name: articleName });
-
-        const currentUpvotes = articleInfo.upvotes;
-
-        await db.collection('articles').updateOne({ name: articleName }, {
-            '$set': {
-                upvotes: currentUpvotes+1,
-            }
-        });
-
-        const updatedArticleInfo = await db.collection('articles').findOne({ name: articleName });
-
-        client.close();
-        if(!updatedArticleInfo) {
-            return res.status(404).send(`Article with the name ${articleName} not found!`);
+        if(!articleInfo) {
+            return res.status(404).json("article not found!");    
         }
-    
+        await db.collection('articles').updateOne({ name: articleName }, { '$set': {
+            upvotes: articleInfo.upvotes + 1,
+        }});
+        const updatedArticleInfo = await db.collection('articles').findOne({ name: articleName });
         return res.status(200).json(updatedArticleInfo);
-    }
-    catch (e) {
-        res.status(500).send('Something went wrong :(');
-    }
+    });
+
 });
 
 app.post('/api/articles/:name/add-comment', async (req, res) => {
@@ -108,25 +92,17 @@ app.post('/api/articles/:name/add-comment', async (req, res) => {
 
 app.get('/api/article/:name', async (req,res) => {
     const articleName = req.params.name;
-    try {
-        const client = await MongoClient.connect(
-            'mongodb://localhost:27017',
-            { useNewUrlParser: true, useUnifiedTopology: true}    
-        );
     
-        const db = client.db('react-blog-db');
-    
-        const articleInfo = await db.collection('articles').findOne({ name: articleName });
-        client.close();
-        if(!articleInfo) {
-            return res.status(404).send(`Article with the name ${articleName} not found!`);
-        }
-    
-        return res.status(200).json(articleInfo);
+    const articleInfo = await withDB(async db => {
+        return await db.collection('articles').findOne({ name: articleName });    
+    }); 
+
+    if(!articleInfo) {
+        return res.status(404).send(`Article with the name ${articleName} not found!`);
     }
-    catch (e) {
-        res.status(500).send('Something went wrong :(');
-    }
+
+    return res.status(200).json(articleInfo);
+    
     
 });
 
